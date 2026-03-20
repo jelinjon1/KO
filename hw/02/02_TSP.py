@@ -49,3 +49,4 @@
 # řešení tak nemusí bejt zacyklenej obrázek kde levej a pravej edge sedí, ale rozloží se nám to jakoby
 
 # vzdálenost počítat přes numpy jinak na brute neprojde
+#  určitě dělat zaokrouhlení čísel co polezou z gurobi
