@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+import sys
+import gurobipy as g
+import numpy
+
 # traveling salesman problem
 
 # 1
@@ -50,3 +55,71 @@
 
 # vzdálenost počítat přes numpy jinak na brute neprojde
 #  určitě dělat zaokrouhlení čísel co polezou z gurobi
+
+def stripe_distance(s1, s2):
+    right_edge = s1[:, -1, :]
+    left_edge  = s2[:, 0, :]
+    
+    return numpy.abs(right_edge - left_edge).sum()
+
+
+
+# plati jeste ze se muzeme koukat na materialy ze cvik?
+
+def main():
+  # input_path = sys.argv[0]
+  input_path = "./hw/02_TSP_image_shredding/instances/example-1.txt"
+  # output_path = sys.argv[1]
+  output_path = "./hw/02_TSP_image_shredding/instances/example-1.txt"
+
+  with open(input_path, "r") as f:
+    lines = [line.strip() for line in f if line.strip()]
+
+  n, w, h = map(int, lines[0].split())
+
+  stripes_list = []
+
+  for line in lines[1:]:
+    values = numpy.fromstring(line, dtype=int, sep=' ')
+    stripe = values.reshape(h, w, 3)
+    stripes_list.append(stripe)
+  
+  stripes = numpy.stack(stripes_list)
+  print(stripes.shape)
+  print(stripes[0])
+
+  # n = # of stripes
+  # matrix m[n][n]
+  # m[i][j] = distance from right side of stripe i to left side of stripe j
+  # m[0][j] dummy stripe 
+  # matrix x[n+1][n+1] ?
+
+
+  # model = g.Model()
+  # x = model.addVars(168, vtype=g.GRB.INTEGER, name="shifts started")
+  # z = model.addVars(168, vtype=g.GRB.INTEGER, name="auxiliary var")
+
+  # for hour in range(168):
+  #   zi = z[hour]
+  #   coverage = g.quicksum(x[j%168] for j in range(hour - 7, hour + 1))
+    
+  #   demand = e[hour%24]
+  #   if (hour <= 119):
+  #     demand = d[hour%24]
+
+  #   # model.addConstr(demand <= coverage)
+  #   model.addConstr(demand - coverage <= zi)
+  #   model.addConstr(coverage - demand <= zi)
+  #   model.addConstr(zi >= 0)
+  #   model.addConstr(demand - coverage <= D)
+
+  # model.setObjective(z.sum(), sense=g.GRB.MINIMIZE)
+  # # model.setObjective(x.sum(), sense=g.GRB.MINIMIZE)
+  # model.optimize()
+
+  # with open(output_path, "w") as f:
+  #   f.write(str(int(round(model.ObjVal))) + "\n")
+  #   f.write(" ".join(str(int(round(x[i].X))) for i in range(168)))
+
+if __name__ == "__main__":
+  main()
