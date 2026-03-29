@@ -3,123 +3,162 @@ import sys
 import gurobipy as g
 import numpy
 
-# traveling salesman problem
+def find_subtours(edges, n):
+    visited = [False] * n
+    subtours = []
 
-# 1
-# naivní řešení je přes ten součet po řádcích a sloupcích, čím zajistíme že do vertexu vejdeme a z něj následně odejdeme
-# jen jednou, ale neřeší to problém s tím když nám tam vzniknou nějaký disjunktní kružnice jako řešení
+    for start in range(n):
+        if not visited[start]:
+            
+            tour = []
+            current = start
 
-# approach je přes čas navštívení vertexu Si, kde chceme aby pro i,j kde vede hrana z i->j kterou jsme vzali, tak
-# Si + cij <= Sj + M(1 - xij)
-# pro všechna i z V a j z V \ {1}
+            while not visited[current]:
+                visited[current] = True
+                tour.append(current)
 
+                for (i, j) in edges:
+                    if i == current:
+                        current = j
+                        break
 
+            subtours.append(tour)
 
-# 2
-# Alternativní formulace s časem ne pro vrcholy, ale pro hrany
-# yij \in Z+0
-# for all i,j in E
-# yij pujde pro hrany od n-1 do 1
-# pokud hrana není vybraná, hodnota je 0
+    return subtours
 
-# yij <= (n - 1) xij    for all ij in E
+def find_subtour(edges, n):
+  visited = [False] * n
 
-# pro všechny hrany pak chceme
-# součet yij všech hran které vedou do uzlu j bez 1 
-# se rovná součet yjk všech hran které vedou ven z uzlu j
-# podmínka neplatí pro jeden uzel (začátek/konec) pro kterej uděláme vyjímku
+  # for each unvisited node, try starting a search
+  # keep track of edges in a cycle along the way
+  for start in range(n):
+    if not visited[start]:
+      
+      cycle = []
+      current = start
 
-# extra podmnka pro start
-# součet hran vedoucích do start + (n - 1) se musí rovnat součtu všcech který vedou ze startu ven
+      # find edge in solution that begins in current node
+      # set current as edge end node
+      # if current is visited, search circled around and end cycle
+      while not visited[current]:
+        
+        visited[current] = True
+        cycle.append(current)
+        
+        for (i, j) in edges:
+          if i == current:
+            current = j
+            break
 
-
-
-# 3
-# lazy constraints
-# zadáme jen základní část podmínek, necháme si udělat řešení
-# zkontrolujeme jestli je feasible
-# pokud ne upravíme model tak aby se tam nevyskytlo to nalezené řešení a opakujeme
-
-# pokud nalezneme v tomhle alg více kružnic naivní implementací
-# vezmeme jen seznam vrcholů, který jí tvoří a na další run přidáme pravidlo který
-# zakáže konkrétně její existenci
-
-
-# image shredding
-
-# budeme brát pásky obrázku jako vrcholy v grafu a hledáme cestu mezi vrcholy, jako posloupnost pásků obrázku
-
-# prevedeme shortest hamiltonian path problem na tsp
-# uděláme asi pomocí arbitrárního vertexu, který spojíme s každým ostatním vertexem a dáme hranám cenu 0
-# řešení tak nemusí bejt zacyklenej obrázek kde levej a pravej edge sedí, ale rozloží se nám to jakoby
-
-# vzdálenost počítat přes numpy jinak na brute neprojde
-#  určitě dělat zaokrouhlení čísel co polezou z gurobi
-
-def stripe_distance(s1, s2):
-    right_edge = s1[:, -1, :]
-    left_edge  = s2[:, 0, :]
+      # length of cycle lesser than n indicates sub tour instead of hamiltonian cycle
+      # return cycle to be added as a lazy constraint
+      if len(cycle) < n:
+        return cycle
     
-    return numpy.abs(right_edge - left_edge).sum()
+    # no sub cycles detected
+    return None
+
+def my_callback(model, where):
+  if where == g.GRB.Callback.MIPSOL:
+    
+    x = model._x
+    n = model._n
+    
+    solution = model.cbGetSolution(x)
+    edges = [(i, j) for i in range(n) for j in range(n) if round(solution[i, j]) == 1]
+    
+    subtours = find_subtours(edges, n)
+
+    if len(subtours) > 1:
+      shortest = min(subtours, key=len)
+
+      model.cbLazy(
+          g.quicksum(x[i, j] for i in shortest for j in shortest) <= len(shortest) - 1
+      )
+
+    # tour = find_subtour(edges, n)
+
+    # if tour is not None:
+    #   model.cbLazy(g.quicksum(x[i, j] for i in tour for j in tour) <= len(tour) - 1)
 
 
+# n = # of stripes
 
-# plati jeste ze se muzeme koukat na materialy ze cvik?
+# matrix c[n+1][n+1]
+# c[i][j] = distance/edge cost from right side of stripe i to left side of stripe j
+# n+1 idx is dummy stripe with each distance 0 to connect all vertices and transform the problem into a tsp
 
+# matrix x[n+1][n+1]
+# x[i][j] = 1 or 0 based on if the edge from node i to node j is present in the cycle
 def main():
-  # input_path = sys.argv[0]
-  input_path = "./hw/02_TSP_image_shredding/instances/example-1.txt"
-  # output_path = sys.argv[1]
-  output_path = "./hw/02_TSP_image_shredding/instances/example-1.txt"
+  input_path = sys.argv[1]
+  # input_path = "./hw/02_TSP_image_shredding/instances/triangle.txt"
+  output_path = sys.argv[2]
+  # output_path = "./hw/02_TSP_image_shredding/output.txt"
 
   with open(input_path, "r") as f:
     lines = [line.strip() for line in f if line.strip()]
 
   n, w, h = map(int, lines[0].split())
 
-  stripes_list = []
-
+  stripesList = []
   for line in lines[1:]:
     values = numpy.fromstring(line, dtype=int, sep=' ')
     stripe = values.reshape(h, w, 3)
-    stripes_list.append(stripe)
+    stripesList.append(stripe)
+
+  stripes = numpy.stack(stripesList)
+
+  rightColumns = stripes[:, :, -1, :]
+  leftColumns  = stripes[:, :, 0, :]
+  diff = numpy.abs(rightColumns[:, None] - leftColumns[None, :])
+  c = diff.sum(axis=(2, 3))
+
+  # add dummy stripe at index n
+  # fill a n+1^2 matrix with zeroes and copy in the original from [0, 0] to [n, n]
+  n_orig = c.shape[0]
+  c_ext = numpy.zeros((n_orig + 1, n_orig + 1), dtype=c.dtype)
+  c_ext[:n_orig, :n_orig] = c
+  dummyNode = n_orig
+  c = c_ext
+  n += 1
+
+  model = g.Model()
+  model.Params.lazyConstraints = 1
+
+  x = model.addVars(n, n, vtype=g.GRB.BINARY, name="x")
   
-  stripes = numpy.stack(stripes_list)
-  print(stripes.shape)
-  print(stripes[0])
+  model._x = x
+  model._n = n
+  
+  for i in range(n):
+    model.addConstr(x.sum(i, '*') == 1)
+    model.addConstr(x.sum('*', i) == 1)
+    model.addConstr(x[i, i] == 0)
+  
+  model.setObjective(
+    g.quicksum(c[i, j] * x[i, j] for i in range(n) for j in range(n)),
+    g.GRB.MINIMIZE
+  )
+  model.optimize(my_callback)
 
-  # n = # of stripes
-  # matrix m[n][n]
-  # m[i][j] = distance from right side of stripe i to left side of stripe j
-  # m[0][j] dummy stripe 
-  # matrix x[n+1][n+1] ?
+  edges = [(i, j) for i in range(n) for j in range(n) if round(x[i, j].X) == 1]
+  successor = {i: j for (i, j) in edges}
 
+  # get order of node indexes in the cycle
+  order = []
+  current = 0
+  for i in range(n):
+    order.append(current)
+    current = successor[current]
+  
+  # slice the order list at the dummy stripe index and concatenate parts
+  dummyIdx = order.index(dummyNode)
+  finalOrder = order[dummyIdx + 1:] + order[:dummyIdx]
 
-  # model = g.Model()
-  # x = model.addVars(168, vtype=g.GRB.INTEGER, name="shifts started")
-  # z = model.addVars(168, vtype=g.GRB.INTEGER, name="auxiliary var")
-
-  # for hour in range(168):
-  #   zi = z[hour]
-  #   coverage = g.quicksum(x[j%168] for j in range(hour - 7, hour + 1))
-    
-  #   demand = e[hour%24]
-  #   if (hour <= 119):
-  #     demand = d[hour%24]
-
-  #   # model.addConstr(demand <= coverage)
-  #   model.addConstr(demand - coverage <= zi)
-  #   model.addConstr(coverage - demand <= zi)
-  #   model.addConstr(zi >= 0)
-  #   model.addConstr(demand - coverage <= D)
-
-  # model.setObjective(z.sum(), sense=g.GRB.MINIMIZE)
-  # # model.setObjective(x.sum(), sense=g.GRB.MINIMIZE)
-  # model.optimize()
-
-  # with open(output_path, "w") as f:
-  #   f.write(str(int(round(model.ObjVal))) + "\n")
-  #   f.write(" ".join(str(int(round(x[i].X))) for i in range(168)))
+  with open(output_path, "w") as f:
+    # f.write(" ".join(str(int(round(finalOrder[i]+1))) for i in range(len(finalOrder))))
+    f.write(" ".join(str(i + 1) for i in finalOrder))
 
 if __name__ == "__main__":
   main()
