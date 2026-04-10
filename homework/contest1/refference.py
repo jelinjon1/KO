@@ -7,13 +7,12 @@ import gurobipy as g
 def extractRoute(x, t, d, N):
   route = []
   times = []
+
   current = 0
 
   while True:
     found = False
     for v in range(N+1):
-      if (current, v, d) not in x:
-        continue
       if (x[current, v, d].X > 0.5):
         
         # returned to depot - finished
@@ -21,7 +20,7 @@ def extractRoute(x, t, d, N):
           return route, times
 
         route.append(v)
-        times.append(int(round(t[v, d].X)))
+        times.append(int(round(t[v].X)))
 
         current = v
         found = True
@@ -32,18 +31,11 @@ def extractRoute(x, t, d, N):
 
   return route, times
 
-def arc_feasible(u, v, T, Tlower, Tupper, N):
-    if v == 0:
-        return True
-    if u == 0:
-        return T[0][v] <= Tupper[v-1]
-    return Tlower[u-1] + T[u][v] <= Tupper[v-1]
-
 def main():
-  input_path = sys.argv[1]
-  # input_path = "./homework/contest1/instances/public-1.txt"
-  output_path = sys.argv[2]
-  # output_path = "./homework/contest1/public-1-out.txt"
+  # input_path = sys.argv[1]
+  input_path = "./homework/contest1/instances/public-1.txt"
+  # output_path = sys.argv[2]
+  output_path = "./homework/contest1/public-1-out.txt"
 
   with open(input_path, "r") as f:
     lines = [line.strip() for line in f if line.strip()]
@@ -83,25 +75,12 @@ def main():
     j += 1
 
   model = g.Model()
-  model.Params.MIPFocus = 1
-  model.Params.TimeLimit = 28
-
-  valid_arcs = [
-    (u, v)
-    for u in range(N+1)
-    for v in range(N+1)
-    if u != v and arc_feasible(u, v, T, Tlower, Tupper, N)
-  ]
 
   # x[u, v, d] = 1 iff truck d goes from customer u to customer v
-  # x = model.addVars(N+1, N+1, K, vtype=g.GRB.BINARY, name="x")
-  x = model.addVars(
-    [(u, v, d) for (u, v) in valid_arcs for d in range(K)],
-    vtype=g.GRB.BINARY, name="x"
-  )
+  x = model.addVars(N+1, N+1, K, vtype=g.GRB.BINARY, name="x")
   
   # t[u, d] arrival time of truck d to customer u
-  t = model.addVars(N+1, K, lb=0, ub=g.GRB.INFINITY, vtype=g.GRB.INTEGER, name="t")
+  t = model.addVars(N+1, lb=0, ub=maxT, vtype=g.GRB.INTEGER, name="t")
   
   # auxilary z[i] = 1 iff truck 1 was used, 0 otherwise
   # sum of all outgoing edges from depot for said truck <= z[d]
@@ -112,14 +91,11 @@ def main():
 
   load = model.addVars(N+1, K, lb=0, ub=Q, vtype=g.GRB.CONTINUOUS, name="load")
   for d in range(K):
-    for (u, v) in valid_arcs:
-        if v != 0 and u != 0:
+    for u in range(N+1):
+      for v in range(1, N+1):
+        if u != v:
           model.addConstr(
             load[v, d] >= load[u, d] + parcelSizes[v-1] - Q * (1 - x[u, v, d])
-          )
-        elif u == 0 and v != 0:
-          model.addConstr(
-            load[v, d] >= parcelSizes[v-1] - Q * (1 - x[u, v, d])
           )
   for d in range(K):
     model.addConstr(load[0, d] == 0)
@@ -145,29 +121,39 @@ def main():
   for d in range(K):
     model.addConstr(
       g.quicksum(
-        parcelSizes[v-1] * x[u, v, d] for (u, v) in valid_arcs if v != 0
+        parcelSizes[v-1] * x[u, v, d] for u in range(N+1) for v in range(1, N+1)
       ) <= Q
     )
 
   Mt = maxT - min(Tlower)
   # Mt = maxT
+  # Mt = maxT + max(max(row) for row in T)
 
   # arrival times
   for d in range(K):
     # default arrival times for depots is 0
-    model.addConstr(t[0, d] == 0)
+    model.addConstr(t[0] == 0)
     # fit within timewindows for each travel to u, only applies if truck visits u
     for u in range(1, N+1):
-      model.addConstr(t[u, d] >= Tlower[u-1] - Mt * (1 - x.sum("*", u, d)))
-      model.addConstr(t[u, d] <= Tupper[u-1] + Mt * (1 - x.sum("*", u, d)))
+      model.addConstr(t[u] >= Tlower[u-1] - Mt * (1 - x.sum("*", u, d)))
+      model.addConstr(t[u] <= Tupper[u-1] + Mt * (1 - x.sum("*", u, d)))
 
-  # for each pair of clients and each truck, the time to arrive at v >= time
-  # to arrvie at u + T[u, v], if v comes immmediately after u in a sequence
+  # forbid self loops
+  # and handle time sequencing within the route of each truck
   for d in range(K):
-    for (u, v) in valid_arcs:
-        if (v != 0):
+    for u in range(N+1):
+
+      # forbid self loops
+      model.addConstr(x[u, u, d] == 0)
+
+      # for each pair of clients and each truck, the time to arrive at v >= time
+      # to arrvie at u + T[u, v], if v comes immmediately after u in a sequence
+      for v in range(1, N+1):
+        # if (u != v) and (T[u][v] <= Tupper[v-1] - Tlower[u-1]):
+        if (u != v):
+
           model.addConstr(
-            t[v, d] >= t[u, d] + T[u][v] - Mt * (1 - x[u, v, d])
+            t[v] >= t[u] + T[u][v] - Mt * (1 - x[u, v, d])
           )
 
   # total miles cost = quicksum of x[u, v, d] * C[u, v] for all d, u, v
@@ -176,7 +162,8 @@ def main():
     g.quicksum(
       x[u, v, d] * C[u][v] 
       for d in range(K) 
-      for (u, v) in valid_arcs
+      for u in range(N+1) 
+      for v in range(N+1)
     ) 
     + g.quicksum(z[d] * G for d in range(K)),
     g.GRB.MINIMIZE
@@ -184,15 +171,15 @@ def main():
 
   model.optimize()
 
-  # for d in range(K):
-  #   print(f"\n truck {d}")
-  #   for u in range(N+1):
-  #     for v in range(N+1):
-  #       if x[u,v,d].X > 0.5:
-  #         print(f"{u} -> {v} arrives at time {t[v].X}")
+  for d in range(K):
+    print(f"\n truck {d}")
+    for u in range(N+1):
+      for v in range(N+1):
+        if x[u,v,d].X > 0.5:
+          print(f"{u} -> {v} arrives at time {t[v].X}")
 
   with open(output_path, "w") as f:
-    if model.status == g.GRB.INFEASIBLE or model.SolCount == 0:
+    if model.status != g.GRB.OPTIMAL:
       f.write("-1")
       # model.computeIIS()
       # model.write("model.ilp")

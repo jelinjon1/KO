@@ -58,12 +58,12 @@ def my_callback(model, where):
 # the image is then decided as beginning at the right side of dummy stripe and ending at left side of dummy stripe (hamiltonian cycle)
   
 # matrix x[n+1][n+1] ?
-# x[i][j] = 1 or 0 based on if the edge is present in the cycle
+# x[i][j] = 1 or 0 based on if the edge is present in the cycles
 def main():
   # input_path = sys.argv[0]
-  input_path = "./hw/02_TSP_image_shredding/instances/triangle.txt"
+  input_path = "./homework/02_TSP_image_shredding/instances/triangle.txt"
   # output_path = sys.argv[1]
-  output_path = "./hw/02_TSP_image_shredding/hello.txt"
+  output_path = "./homework/02_TSP_image_shredding/hello.txt"
 
   with open(input_path, "r") as f:
     lines = [line.strip() for line in f if line.strip()]

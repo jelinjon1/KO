@@ -30,7 +30,7 @@ d = [6, 6, 6, 6, 6, 8, 9, 12, 18, 22, 25, 21, 21, 20, 18, 21, 21, 24, 24, 18, 18
 e = [3, 3, 3, 3, 3, 4, 4, 6, 9, 11, 12, 10, 10, 10, 9, 10, 10, 12, 12, 9, 9, 9, 6, 4]
 D = 2
 
-with open('./hw/01/instances/public' + str(1) + '.txt') as f:
+with open('./homework/01/instances/public' + str(1) + '.txt') as f:
   lines = f.readlines()
   
   i = 0
@@ -108,7 +108,7 @@ solution = [str(int(round(x[i].X))) for i in range(168)]
 print(" ".join(solution))
 
 print("EXPECTED SOLUTION")
-with open('./hw/01/solutions/public' + str(1) + '.txt') as f:
+with open('./homework/01/solutions/public' + str(1) + '.txt') as f:
     lines = f.readlines()
     i = 0
     for line in lines:

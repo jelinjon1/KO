@@ -92,9 +92,9 @@ def my_callback(model, where):
 # x[i][j] = 1 or 0 based on if the edge from node i to node j is present in the cycle
 def main():
   input_path = sys.argv[1]
-  # input_path = "./hw/02_TSP_image_shredding/instances/triangle.txt"
+  # input_path = "./homework/02_TSP_image_shredding/instances/triangle.txt"
   output_path = sys.argv[2]
-  # output_path = "./hw/02_TSP_image_shredding/output.txt"
+  # output_path = "./homework/02_TSP_image_shredding/output.txt"
 
   with open(input_path, "r") as f:
     lines = [line.strip() for line in f if line.strip()]
