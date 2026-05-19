@@ -269,33 +269,33 @@ def main():
 
         sourceBalance = 0
         sinkBalance = 0
-        customerBalances = { f'C{i}' : 0 for i in range(C)}
+        # customerBalances = { f'C{i}' : 0 for i in range(C)}
         productBalances = { f'P{i}' : 0 for i in range(1, P+1)}
         
-        for edge in graph.adj["source"]:
-            if edge.isForward:
-                sourceBalance -= edge.originalLower
-                customerBalances[edge.to] += edge.originalLower
-        for i in range(C):
-            customerIdx = f'C{i}'
-            for edge in graph.adj[customerIdx]:
-                if edge.isForward:
-                    customerBalances[customerIdx] -= edge.originalLower
-                    productBalances[edge.to] += edge.originalLower
-        for i in range(1, P+1):
-            productIdx = f'P{i}'
-            for edge in graph.adj[productIdx]:
-                if edge.isForward:
-                    productBalances[productIdx] -= edge.originalLower
-                    sinkBalance += edge.originalLower
+        # for edge in graph.adj["source"]:
+        #     if edge.isForward:
+        #         sourceBalance -= edge.originalLower
+        #         customerBalances[edge.to] += edge.originalLower
+        # for i in range(C):
+        #     customerIdx = f'C{i}'
+        #     for edge in graph.adj[customerIdx]:
+        #         if edge.isForward:
+        #             customerBalances[customerIdx] -= edge.originalLower
+        #             productBalances[edge.to] += edge.originalLower
+        # for i in range(1, P+1):
+        #     productIdx = f'P{i}'
+        #     for edge in graph.adj[productIdx]:
+        #         if edge.isForward:
+        #             productBalances[productIdx] -= edge.originalLower
+        #             sinkBalance += edge.originalLower
 
         # 3) This is a Feasible Flow with Balances and zero lower bounds because 
         # SUM{v∈ V(G)} b(v) = 0 (notice that l(e) appears twice in summation, 
         # once with a positive and once with a negative sign).
-        if (sourceBalance + sinkBalance + sum(customerBalances.values()) + sum(productBalances.values()) != 0):
-            with open(output_path, "w") as f:
-                f.write("-1")
-            return
+        # if (sourceBalance + sinkBalance + sum(customerBalances.values()) + sum(productBalances.values()) != 0):
+        #     with open(output_path, "w") as f:
+        #         f.write("-1")
+        #     return
 
 
         # 4) While solving this decision problem (i.e. adding s′, t′ and solving the
@@ -308,21 +308,21 @@ def main():
         graph.addEdge("source", "fakeSink", 0, -sourceBalance)
         graph.addEdge("fakeSource", "sink", 0, sinkBalance)
 
-        for i in range(C):
-            customerIdx = f'C{i}'
-            balance = customerBalances[customerIdx]
-            if (balance < 0):
-                graph.addEdge(customerIdx, "fakeSink", 0, -balance)
-            if (balance > 0):
-                graph.addEdge("fakeSource", customerIdx, 0, balance)
+        # for i in range(C):
+        #     customerIdx = f'C{i}'
+        #     balance = customerBalances[customerIdx]
+        #     if (balance < 0):
+        #         graph.addEdge(customerIdx, "fakeSink", 0, -balance)
+        #     if (balance > 0):
+        #         graph.addEdge("fakeSource", customerIdx, 0, balance)
         
-        for i in range(1, P+1):
-            productIdx = f'P{i}'
-            balance = productBalances[productIdx]
-            if (balance < 0):
-                graph.addEdge(productIdx, "fakeSink", 0, -balance)
-            if (balance > 0):
-                graph.addEdge("fakeSource", productIdx, 0, balance)
+        # for i in range(1, P+1):
+        #     productIdx = f'P{i}'
+        #     balance = productBalances[productIdx]
+        #     if (balance < 0):
+        #         graph.addEdge(productIdx, "fakeSink", 0, -balance)
+        #     if (balance > 0):
+        #         graph.addEdge("fakeSource", productIdx, 0, balance)
 
         # Conclusion: finding of the initial flow with nonzero lower bounds can
         # be transformed to the Feasible Flow with Balances and zero lower
@@ -385,13 +385,13 @@ def main():
             # print()
             augment(augPath, "sink")
     
-    if (isFeasible(graph, P)):
-        solution = getSolution(graph, C)
+    # if (isFeasible(graph, P)):
+    #     solution = getSolution(graph, C)
         # for l in solution:
         #     print(l)
         
-        with open(output_path, "w") as f:
-            f.write("\n".join([" ".join([str(n) for n in item]) for item in solution]))
+        # with open(output_path, "w") as f:
+        #     f.write("\n".join([" ".join([str(n) for n in item]) for item in solution]))
                 
     else:
         with open(output_path, "w") as f:

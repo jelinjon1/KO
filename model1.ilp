@@ -1,0 +1,47 @@
+\ Model _copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+\ Signature: 0xc2f282c03ac31e4
+Minimize
+ 
+Subject To
+ R1: visits[0,1] - z[1] = 0
+ R3: travels[0,1] + travels[2,1] + travels[3,1] = 1
+ R4: travels[0,2] + travels[1,2] + travels[3,2] = 1
+ R5: travels[0,3] + travels[1,3] = 1
+ R8: travels[3,0] + travels[3,1] + travels[3,2] = 1
+ R9: travels[0,1] + travels[0,2] + travels[0,3] - z[0] - z[1] = 0
+ R19: - travels[0,1] - visits[0,1] + visits[1,1] >= -1
+ R20: - travels[0,2] - visits[0,1] + visits[2,1] >= -1
+ R21: - travels[0,3] - visits[0,1] + visits[3,1] >= -1
+ R47: visits[1,0] + visits[1,1] = 1
+ R48: visits[2,0] + visits[2,1] = 1
+ R49: visits[3,0] + visits[3,1] = 1
+ R57: t[2] <= 8
+ R58: t[3] >= 2
+ R59: t[3] <= 5
+ R60: - 10 travels[0,1] - t[0] + t[1] >= -9
+ R63: - 10 travels[1,2] - t[1] + t[2] >= -8
+ R64: - 10 travels[1,3] - t[1] + t[3] >= -5
+ R65: - 10 travels[2,1] + t[1] - t[2] >= -8
+ R66: - 10 travels[3,1] + t[1] - t[3] >= -5
+ R67: - 10 travels[3,2] + t[2] - t[3] >= -5
+ R68: - travels[0,1] + first_arc[1,0] + first_arc[1,1] = 0
+ R70: - travels[0,3] + first_arc[3,0] + first_arc[3,1] = 0
+ R71: - z[0] + first_arc[1,0] + first_arc[2,0] + first_arc[3,0] = 0
+ R72: - z[1] + first_arc[1,1] + first_arc[2,1] + first_arc[3,1] = 0
+ R73: visits[1,0] - first_arc[1,0] >= 0
+ R75: visits[2,0] - first_arc[2,0] >= 0
+ R77: visits[3,0] - first_arc[3,0] >= 0
+Bounds
+ t[1] free
+ t[2] free
+ t[3] free
+Binaries
+ travels[0,1] travels[0,2] travels[0,3] travels[1,2] travels[1,3]
+ travels[2,1] travels[3,0] travels[3,1] travels[3,2] visits[0,1]
+ visits[1,0] visits[1,1] visits[2,0] visits[2,1] visits[3,0] visits[3,1]
+ z[0] z[1] first_arc[1,0] first_arc[1,1] first_arc[2,0] first_arc[2,1]
+ first_arc[3,0] first_arc[3,1]
+Generals
+ t[0] t[1] t[2] t[3]
+End

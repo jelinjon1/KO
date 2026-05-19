@@ -193,7 +193,6 @@ def cancelCycle(graph: Graph, residual: Graph, cycle: list):
                 break
 
 def main():
-    # FIXME input public4, line 4, 19 check manually
 
     input_path = sys.argv[1]
     # input_path = "./homework/04_min_cost_flow/instances/public4.txt"
@@ -278,11 +277,6 @@ def main():
                     kpBalances[kpIndex] -= edge.originalLower
                     sinkBalance += edge.originalLower
 
-        # TODO remove
-        # print(f"sourceBalance={sourceBalance}, sinkBalance={sinkBalance}")
-        # print(f"kBalances={kBalances}")
-        # print(f"kpBalances={kpBalances}")
-
         if (sourceBalance + sinkBalance + sum(kBalances.values()) + sum(kpBalances.values()) != 0):
             with open(output_path, "w") as f:
                 f.write("-1")
@@ -351,30 +345,12 @@ def main():
             # detect a negative cycle
             negativeCycle = findNegativeCycle(residual)
             
-            # TODO remove
-            # print(negativeCycle)
-            
             if negativeCycle:
-                # TODO remove
-                # totalCost = sum(
-                #     edge.cost
-                #     for node in negativeCycle[:-1]
-                #     for edge in residual.adj[node]
-                #     if edge.to == negativeCycle[negativeCycle.index(node) + 1] and edge.isForward
-                # )
-                # print(f"cycle cost: {totalCost}")
-                
                 # if cycle is not None, cancel it, updating the graph
                 cancelCycle(graph=graph, residual=residual, cycle=negativeCycle)
             else:
                 break
-        
-        # TODO remove
-        # for j in range(1, N+1):
-        #     for edge in graph.adj[f'A{j}']:
-        #         if edge.to.startswith('B') and edge.isForward:
-        #             print(f"A{j}->{edge.to}: flow={edge.flow}")
-        
+
         # extract assignment solution
         # find edges from Ai to Bj with flow=1, note the pairing of indexes
         assignment = [0] * (N + 1)

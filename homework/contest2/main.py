@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import sys
 import gurobipy as g
+import time as hello
+
+t_start = hello.time()
 
 # visit all clients along the path from depot
 # note arrival times for client idx
@@ -40,16 +43,18 @@ def arc_feasible(u, v, T, Tlower, Tupper, N):
     return Tlower[u-1] + T[u][v] <= Tupper[v-1]
 
 def main():
-  # input_path = sys.argv[1]
-  input_path = "./homework/contest1/instances/test1.txt"
-  # output_path = sys.argv[2]
-  output_path = "./homework/contest1/public-2-out.txt"
+  input_path = sys.argv[1]
+  # input_path = "./homework/contest1/instances/test1.txt"
+  output_path = sys.argv[2]
+  # output_path = "./homework/contest1/public-2-out.txt"
 
   with open(input_path, "r") as f:
     lines = [line.strip() for line in f if line.strip()]
 
   # customers, max vans, van capacity, van cost
   N, K, Q, G = map(int, lines[0].split())
+  timeLimit = float(sys.argv[3])
+  # timeLimit = float(10.0)
 
   parcelSizes = [0 for i in range(N)]
   Tlower = [0 for i in range(N)]
@@ -84,7 +89,7 @@ def main():
 
   model = g.Model()
   model.Params.MIPFocus = 1
-  model.Params.TimeLimit = 28
+  # model.Params.TimeLimit = timeLimit
 
   valid_arcs = [
     (u, v)
@@ -198,7 +203,16 @@ def main():
     g.GRB.MINIMIZE
   )
 
+  t_built = hello.time()
+  print(f"build time: {t_built - t_start:.2f}s", flush=True)
+  
+  model.Params.TimeLimit = timeLimit - (t_built - t_start) - 1
+  
   model.optimize()
+
+  t_done = hello.time()
+  print(f"solve time: {t_done - t_built:.2f}s", flush=True)
+  print(f"total time: {t_done - t_start:.2f}s", flush=True)
 
   # for d in range(K):
   #   print(f"\n truck {d}")

@@ -301,14 +301,6 @@ def main():
             # print("no augmenting path found")
             break
         else:
-            # TODO remove
-            # reconstruct path for debug
-            # node = "sink"
-            # while node is not None:
-            #     pred, edge, bottleneck = augPath[node]
-            #     print(f"{pred} -> {node} (bottleneck so far: {bottleneck})")
-            #     node = pred
-            # print()
             augment(augPath, "sink")
     
     if (isFeasible(graph, P)):
